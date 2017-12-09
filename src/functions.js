@@ -39,7 +39,13 @@ function fillMap(selection, color, data) {
     // update headline
     //d3.select("h2").text(headline + d3.select("#year").node().value);
     // render legend
+    updateLegend(color, mapcountry);
     renderLegend(color, mapcountry);
+  }
+  
+  function updateLegend(color,data){
+    let legend = d3.select("svg#map g.legend").selectAll("rect").remove();//.remove();
+    let text = d3.select("svg#map g.legend").selectAll("text").remove();  
   }
   
   function renderLegend(color, data) {
@@ -49,14 +55,14 @@ function fillMap(selection, color, data) {
     let svg_height = +d3.select("svg#map").attr("height");
     let legend_items = pairQuantiles(color.domain());
   
-    let legend = d3.select("svg#map g.legend").selectAll("rect")
-                 .data(color.range());
-  
-    legend.exit().remove();
+    let legend = d3.select("svg#map g.legend").selectAll("rect").data(color.range());//.remove();
+                
+
+                 legend.exit().remove();
   
     legend.enter()
             .append("rect")
-          //.merge(legend)
+            //.merge(legend)
             .attr("width", "20")
             .attr("height", "20")
             .attr("y", function(d, i) { return (svg_height-29) - 25*i; })
@@ -64,11 +70,15 @@ function fillMap(selection, color, data) {
             .attr("fill", function(d, i) { return d3.rgb(d); })
             .on("mouseover", function(d) { legendMouseOver(d, color, data); })
             .on("mouseout", function() { legendMouseOut(color, data); });
+    
+            legend.exit();
   
-    let text = d3.select("svg#map g.legend").selectAll("text");
+    let text = d3.select("svg#map g.legend").selectAll("text").data(legend_items);  
+
+    text.exit().remove();
   
-    text.data(legend_items)
-      .enter().append("text")
+    text.enter()
+        .append("text")
       //.merge(text)
         .attr("y", function(d, i) { return (svg_height-14) - 25*i; })
         .attr("x", 60)
@@ -78,6 +88,11 @@ function fillMap(selection, color, data) {
           .text("Legend (quintile ranges)")
           .attr("x", 30)
           .attr("y", 286);
+
+          
+
+          
+    
   }
   
   function renderBars(color, data) {

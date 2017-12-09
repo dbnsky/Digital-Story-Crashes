@@ -193,10 +193,10 @@ d3.csv('data-crashes.csv', function (data) {
                 label += '(' + Math.floor(d.value / all.value() * 100) + '%)';
             }
             return label;
-        });/*.on("click", function(){
+        }).on("renderlet",function(){
             updateMap(crashByState.top(Infinity));
         });
-        
+        /*
         onClick = function(chart){
             dc.redrawAll();
             //dc.renderAll();
@@ -248,6 +248,8 @@ d3.csv('data-crashes.csv', function (data) {
         //.ordinalColors(['#3182bd', '#6baed6', '#9ecae1', '#c6dbef', '#dadaeb'])
         .label(function (d) {
             return d.key;
+        }).on("renderlet",function(){
+            updateMap(crashByState.top(Infinity));
         })
         // Title sets the row text
         .title(function (d) {
@@ -269,6 +271,9 @@ d3.csv('data-crashes.csv', function (data) {
         .margins({top: 0, right: 50, bottom: 20, left: 40})
         .dimension(dateDim)
         .group(crashByDate)
+        .on("renderlet",function(){
+            updateMap(crashByState.top(Infinity));
+        })
         .centerBar(true)
         .gap(1)
         .x(d3.time.scale().domain([new Date(2008, 1, 2), new Date(2017, 11, 7)]))
