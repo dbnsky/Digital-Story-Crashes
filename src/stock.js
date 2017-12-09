@@ -1,5 +1,5 @@
 //# dc.js Getting Started and How-To Guide
-'use strict';
+//'use strict';
 
 /* jshint globalstrict: true */
 /* global dc,d3,crossfilter,colorbrewer */
@@ -19,6 +19,60 @@ var gainOrLossChart = dc.pieChart('#gain-loss-chart');
 var dayOfWeekChart = dc.rowChart('#day-of-week-chart');
 //var moveChart = dc.lineChart('#monthly-move-chart');
 var volumeChart = dc.barChart('#monthly-volume-chart');
+
+
+/* MAP */
+ /// params
+ var color_na = d3.rgb("#d4d4d4");
+ // only works if array.length-1 is between 3 and 9 (d3 color scheme)
+ var quantiles = [0, 0.2, 0.4, 0.6, 0.8, 1];
+ var width = 960, height = 425;
+
+ /// main
+ // init map container, projection
+
+ var svg = d3.select("body")
+             .append("svg")
+             .attr("id", "map")
+             .attr('width', width)
+             .attr('height', height);
+
+ var projection = d3.geo.mercator().translate([width/2, height/2]).scale(125);
+ var path = d3.geo.path().projection(projection);  
+ 
+ var mapLayer = svg.append('svg_layer')
+                   .classed('map-layer', true);
+
+  // init legend container
+ var legendMap = svg.append("g")
+          .attr("class", "legend");
+
+          
+          
+ svg.append("g")
+         .attr("class", "legend_title")
+         .append("text");
+
+ // init bars container
+ var margin = {top: 50, right:10, bottom:50, left:30};
+ var svgBarsWidth = 960 - margin.left - margin.right,
+     svgBarsHeight = 200 - margin.top - margin.bottom;
+
+ var x = d3.scale.ordinal()
+             .rangeRoundBands([0, svgBarsWidth]);
+             //.padding(.05);
+
+ var y = d3.scale.linear().range([svgBarsHeight, 0]);
+
+ var svg_bars = d3.select("body")
+     .append("svg")
+       .attr("id", "bars")
+       .attr("width", svgBarsWidth + margin.left + margin.right)
+       .attr("height", svgBarsHeight + margin.top + margin.bottom)
+     .append("g")
+       .attr("class", "bars")
+       .attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
+ // load data
 
 
 // ### Anchor Div for Charts
@@ -62,89 +116,11 @@ var volumeChart = dc.barChart('#monthly-volume-chart');
 //jQuery.getJson('data.json', function(data){...});
 //```
 d3.csv('data-crashes.csv', function (data) {
-    // Since its a csv file we need to format the data a bit.
-    /*
-    var dateFormat = d3.time.format('%m/%d/%Y');
-    var numberFormat = d3.format('.2f');
-
-    data.forEach(function (d) {
-        d.close = +d.close; // coerce to number
-        d.open = +d.open;
-    });*/
-
-    //### Create Crossfilter Dimensions and Groups
-     /*
-    // Maintain running tallies by year as filters are applied or removed
-    var yearlyPerformanceGroup = yearlyDimension.group().reduce(
-         // callback for when data is added to the current filter results
-        function (p, v) {
-            ++p.count;
-            p.absGain += v.close - v.open;
-            p.fluctuation += Math.abs(v.close - v.open);
-            p.sumIndex += (v.open + v.close) / 2;
-            p.avgIndex = p.sumIndex / p.count;
-            p.percentageGain = p.avgIndex ? (p.absGain / p.avgIndex) * 100 : 0;
-            p.fluctuationPercentage = p.avgIndex ? (p.fluctuation / p.avgIndex) * 100 : 0;
-            return p;
-        },
-         //callback for when data is removed from the current filter results
-        function (p, v) {
-            --p.count;
-            p.absGain -= v.close - v.open;
-            p.fluctuation -= Math.abs(v.close - v.open);
-            p.sumIndex -= (v.open + v.close) / 2;
-            p.avgIndex = p.count ? p.sumIndex / p.count : 0;
-            p.percentageGain = p.avgIndex ? (p.absGain / p.avgIndex) * 100 : 0;
-            p.fluctuationPercentage = p.avgIndex ? (p.fluctuation / p.avgIndex) * 100 : 0;
-            return p;
-        },
-        // initialize p
-        function () {
-            return {
-                count: 0,
-                absGain: 0,
-                fluctuation: 0,
-                fluctuationPercentage: 0,
-                sumIndex: 0,
-                avgIndex: 0,
-                percentageGain: 0
-            };
-        }
-    );*/
-
+  
 
     //See the [crossfilter API](https://github.com/square/crossfilter/wiki/API-Reference) for reference.
     var ndx = crossfilter(data);
     var all = ndx.groupAll();
-/*
-    // Dimension by year
-    var yearlyDimension = ndx.dimension(function (d) {
-        return new Date(d.Date).getFullYear();
-    });
-   
-    // Dimension by full date
-    var dateDimension = ndx.dimension(function (d) {
-        return new Date(d.Date).getDate();
-    });
-        var indexAvgByMonthGroup = moveMonths.group().reduce(
-        function (p, v) {
-            ++p.days;
-            p.total += v.total;
-            p.avg = Math.round(moveMonths.size / p.days);
-            return p;
-        },
-        function (p, v) {
-            --p.days;
-            p.total -= v.total;
-            p.avg = p.days ? Math.round(p.total / p.days) : 0;
-            return p;
-        },
-        function () {
-            return {days: 0, total: 0, avg: 0};
-        }
-    );
-    */
-
 
     // Create categorical dimension
     var commercialOrNot = ndx.dimension(function (d) {
@@ -153,30 +129,6 @@ d3.csv('data-crashes.csv', function (data) {
     });
     // Produce counts records in the dimension
     var commercialOrNotGroup = commercialOrNot.group();
-/*
-    // Determine a histogram of percent changes
-    var fluctuation = ndx.dimension(function (d) {
-        return Math.round((d.close - d.open) / d.open * 100);
-    });
-    var fluctuationGroup = fluctuation.group();
-*/
-    // Summarize volume by quarter
-    /*
-    var quarter = ndx.dimension(function (d) {
-        var month = d.dd.getMonth();
-        if (month <= 2) {
-            return 'Q1';
-        } else if (month > 2 && month <= 5) {
-            return 'Q2';
-        } else if (month > 5 && month <= 8) {
-            return 'Q3';
-        } else {
-            return 'Q4';
-        }
-    });
-    var quarterGroup = quarter.group().reduceSum(function (d) {
-        return d.volume;
-    });*/
 
     // Counts per weekday
     var dayOfWeek = ndx.dimension(function (d) {
@@ -196,110 +148,21 @@ d3.csv('data-crashes.csv', function (data) {
 
     // Group by total accidents within month
     var crashByDate = dateDim.group().reduceCount();
-/*
-    // Group by total volume within move, and scale down result
-    var volumeByMonthGroup = moveMonths.group().reduceSum(function (d) {
-        return d.Fatalities;
+
+    //Dimension by StateOfOccurence
+    var stateOccCrashDim = ndx.dimension(function(d) {
+        return d.StateOfOccurrence;
     });
-*/
+    //Group by total accidents with state of occurence
+    var crashByState = stateOccCrashDim.group().reduceCount();
+    var crashPerCountry = crashByState.top(Infinity);
+
 
     //### Define Chart Attributes
     // Define chart attributes using fluent methods. See the
     // [dc.js API Reference](https://github.com/dc-js/dc.js/blob/master/web/docs/api-latest.md) for more information
     //
 
-    //#### Bubble Chart
-
-    //Create a bubble chart and use the given css selector as anchor. You can also specify
-    //an optional chart group for this chart to be scoped within. When a chart belongs
-    //to a specific group then any interaction with the chart will only trigger redraws
-    //on charts within the same chart group.
-    // <br>API: [Bubble Chart](https://github.com/dc-js/dc.js/blob/master/web/docs/api-latest.md#bubble-chart)
-/*
-    yearlyBubbleChart // dc.bubbleChart('#yearly-bubble-chart', 'chartGroup')
-        // (_optional_) define chart width, `default = 200`
-        .width(990)
-        // (_optional_) define chart height, `default = 200`
-        .height(250)
-        // (_optional_) define chart transition duration, `default = 750`
-        .transitionDuration(1500)
-        .margins({top: 10, right: 50, bottom: 30, left: 40})
-        .dimension(yearlyDimension)
-        //The bubble chart expects the groups are reduced to multiple values which are used
-        //to generate x, y, and radius for each key (bubble) in the group
-        .group(yearlyPerformanceGroup)
-        // (_optional_) define color function or array for bubbles: [ColorBrewer](http://colorbrewer2.org/)
-        .colors(colorbrewer.RdYlGn[9])
-        //(optional) define color domain to match your data domain if you want to bind data or color
-        .colorDomain([-500, 500])
-    //##### Accessors
-
-        //Accessor functions are applied to each value returned by the grouping
-
-        // `.colorAccessor` - the returned value will be passed to the `.colors()` scale to determine a fill color
-        .colorAccessor(function (d) {
-            return d.value.absGain;
-        })
-        // `.keyAccessor` - the `X` value will be passed to the `.x()` scale to determine pixel location
-        .keyAccessor(function (p) {
-            return p.value.absGain;
-        })
-        // `.valueAccessor` - the `Y` value will be passed to the `.y()` scale to determine pixel location
-        .valueAccessor(function (p) {
-            return p.value.percentageGain;
-        })
-        // `.radiusValueAccessor` - the value will be passed to the `.r()` scale to determine radius size;
-        //   by default this maps linearly to [0,100]
-        .radiusValueAccessor(function (p) {
-            return p.value.fluctuationPercentage;
-        })
-        .maxBubbleRelativeSize(0.3)
-        .x(d3.scale.linear().domain([-2500, 2500]))
-        .y(d3.scale.linear().domain([-100, 100]))
-        .r(d3.scale.linear().domain([0, 4000]))
-        //##### Elastic Scaling
-
-        //`.elasticY` and `.elasticX` determine whether the chart should rescale each axis to fit the data.
-        .elasticY(true)
-        .elasticX(true)
-        //`.yAxisPadding` and `.xAxisPadding` add padding to data above and below their max values in the same unit
-        //domains as the Accessors.
-        .yAxisPadding(100)
-        .xAxisPadding(500)
-        // (_optional_) render horizontal grid lines, `default=false`
-        .renderHorizontalGridLines(true)
-        // (_optional_) render vertical grid lines, `default=false`
-        .renderVerticalGridLines(true)
-        // (_optional_) render an axis label below the x axis
-        .xAxisLabel('Index Gain')
-        // (_optional_) render a vertical axis lable left of the y axis
-        .yAxisLabel('Index Gain %')
-        //##### Labels and  Titles
-
-        //Labels are displayed on the chart for each bubble. Titles displayed on mouseover.
-        // (_optional_) whether chart should render labels, `default = true`
-        .renderLabel(true)
-        .label(function (p) {
-            return p.key;
-        })
-        // (_optional_) whether chart should render titles, `default = false`
-        .renderTitle(true)
-        .title(function (p) {
-            return [
-                p.key,
-                'Index Gain: ' + numberFormat(p.value.absGain),
-                'Index Gain in Percentage: ' + numberFormat(p.value.percentageGain) + '%',
-                'Fluctuation / Index Ratio: ' + numberFormat(p.value.fluctuationPercentage) + '%'
-            ].join('\n');
-        })
-        //#### Customize Axes
-
-        // Set a custom tick format. Both `.yAxis()` and `.xAxis()` return an axis object,
-        // so any additional method chaining applies to the axis, not the chart.
-        .yAxis().tickFormat(function (v) {
-            return v + '%';
-        });
-*/
     // #### Pie/Donut Charts
 
     // Create a pie chart and use the given css selector as anchor. You can also specify
@@ -307,6 +170,7 @@ d3.csv('data-crashes.csv', function (data) {
     // to a specific group then any interaction with such chart will only trigger redraw
     // on other charts within the same chart group.
     // <br>API: [Pie Chart](https://github.com/dc-js/dc.js/blob/master/web/docs/api-latest.md#pie-chart)
+
 
     gainOrLossChart /* dc.pieChart('#gain-loss-chart', 'chartGroup') */
     // (_optional_) define chart width, `default = 200`
@@ -329,7 +193,14 @@ d3.csv('data-crashes.csv', function (data) {
                 label += '(' + Math.floor(d.value / all.value() * 100) + '%)';
             }
             return label;
-        })
+        });/*.on("click", function(){
+            updateMap(crashByState.top(Infinity));
+        });
+        
+        onClick = function(chart){
+            dc.redrawAll();
+            //dc.renderAll();
+};*/
     /*
         // (_optional_) whether chart should render labels, `default = true`
         .renderLabel(true)
@@ -343,7 +214,14 @@ d3.csv('data-crashes.csv', function (data) {
         .colorDomain([-1750, 1644])
         // (_optional_) define color value accessor
         .colorAccessor(function(d, i){return d.value;})
-        */;
+        */
+/*
+        var original = gainOrLossChart.defaults.global.legend.onClick;
+        gainOrLossChart.defaults.global.legend.onClick = function(e, legendItem) {
+            updateMap(crashByState.top(Infinity));
+     
+          original.call(this, e, legendItem);
+        };*/
 /*
     quarterChart // dc.pieChart('#quarter-chart', 'chartGroup')
         .width(180)
@@ -378,93 +256,12 @@ d3.csv('data-crashes.csv', function (data) {
         .elasticX(true)
         .xAxis().ticks(4);
 
-    //#### Bar Chart
-
-    // Create a bar chart and use the given css selector as anchor. You can also specify
-    // an optional chart group for this chart to be scoped within. When a chart belongs
-    // to a specific group then any interaction with such chart will only trigger redraw
-    // on other charts within the same chart group.
-    // <br>API: [Bar Chart](https://github.com/dc-js/dc.js/blob/master/web/docs/api-latest.md#bar-chart)
-    /*
-    fluctuationChart // dc.barChart('#volume-month-chart', 'chartGroup') 
-        .width(420)
-        .height(180)
-        .margins({top: 10, right: 50, bottom: 30, left: 40})
-        .dimension(fluctuation)
-        .group(fluctuationGroup)
-        .elasticY(true)
-        // (_optional_) whether bar should be center to its x value. Not needed for ordinal chart, `default=false`
-        .centerBar(true)
-        // (_optional_) set gap between bars manually in px, `default=2`
-        .gap(1)
-        // (_optional_) set filter brush rounding
-        .round(dc.round.floor)
-        .alwaysUseRounding(true)
-        .x(d3.scale.linear().domain([-25, 25]))
-        .renderHorizontalGridLines(true)
-        // Customize the filter displayed in the control span
-        .filterPrinter(function (filters) {
-            var filter = filters[0], s = '';
-            s += numberFormat(filter[0]) + '% -> ' + numberFormat(filter[1]) + '%';
-            return s;
-        });
-
-    // Customize axes
-    fluctuationChart.xAxis().tickFormat(
-        function (v) { return v + '%'; });
-    fluctuationChart.yAxis().ticks(5);
-*/
-    //#### Stacked Area Chart
-
-    //Specify an area chart by using a line chart with `.renderArea(true)`.
-    // <br>API: [Stack Mixin](https://github.com/dc-js/dc.js/blob/master/web/docs/api-latest.md#stack-mixin),
-    // [Line Chart](https://github.com/dc-js/dc.js/blob/master/web/docs/api-latest.md#line-chart)
-    /*
-    moveChart // dc.lineChart('#monthly-move-chart', 'chartGroup')
-        .renderArea(true)
-        .width(990)
-        .height(200)
-        .transitionDuration(1000)
-        .margins({top: 30, right: 50, bottom: 25, left: 40})
-        .dimension(moveMonths)
-        .mouseZoomable(true)
-    // Specify a "range chart" to link its brush extent with the zoom of the current "focus chart".
-        //.rangeChart(volumeChart)
-        .x(d3.time.scale().domain([new Date(2008, 1, 2), new Date(2017, 11, 7)]))
-        .round(d3.time.month.round)
-        .xUnits(d3.time.months)
-        .elasticY(true)
-        .renderHorizontalGridLines(true)
-    //##### Legend
-
-        // Position the legend relative to the chart origin and specify items' height and separation.
-        .legend(dc.legend().x(800).y(10).itemHeight(13).gap(5))
-        .brushOn(false)
-        // Add the base layer of the stack with group. The second parameter specifies a series name for use in the
-        // legend.
-        // The `.valueAccessor` will be used for the base layer
-        .group(indexAvgByMonthGroup, 'Monthly Index Average')
-        .valueAccessor(function (d) {
-            return d.value.days;
-        })
-        // Stack additional layers with `.stack`. The first paramenter is a new group.
-        // The second parameter is the series name. The third is a value accessor.
-        .stack(monthlyMoveGroup, 'Monthly Index Move', function (d) {
-            return d.value;
-        })
-        // Title can be called by any stack layer.
-        .title(function (d) {
-            var value = d.data.value.avg ? d.data.value.days : d.data.value.days;
-            if (isNaN(value)) {
-                value = 0;
-            }
-            return d.key + '\n' + value; ////dateFormat(d.key)// 
-        });*/
-
     //#### Range Chart
 
     // Since this bar chart is specified as "range chart" for the area chart, its brush extent
     // will always match the zoom of the area chart.
+
+
     
     volumeChart
         .width(990) // dc.barChart('#monthly-volume-chart', 'chartGroup');
@@ -477,12 +274,44 @@ d3.csv('data-crashes.csv', function (data) {
         .x(d3.time.scale().domain([new Date(2008, 1, 2), new Date(2017, 11, 7)]))
         .round(d3.time.month.round)
         .alwaysUseRounding(true)
-        .xUnits(d3.time.month);
+        .xUnits(d3.time.month).brush().extent([ d3.time.month(new Date("May 2009")),  d3.time.month(new Date("May 2010"))]);
+        //.context.select('.brush').call(brush);
         //.transitionDuration(500)
         //.xAxis().tickFormat();
 
 
-    //#### Data Count
+   
+    //#### MAP
+
+      // load map data and render it
+    d3.json("data/world.geojson", function(error, world) {
+        var countries = world.features;
+
+        var mapcountry = crashPerCountry.reduce(function(map, obj) {
+           map[obj.key] = obj.value;
+           return map;
+        }, {});
+
+        let color = calcColorScale(mapcountry);
+
+        // Draw each countries as a path
+        svg.selectAll('path')
+            .data(countries)
+            .enter().append('path')
+            .attr("class", "country")
+            .attr('d', path)
+            .attr("id", function(d,i) { return d.id; })
+            .attr("title", function(d,i) { return d.properties.name; })
+            .call(fillMap, color, mapcountry)
+            .append("title")
+            .call(setPathTitle, mapcountry);
+
+        // render legend
+        renderLegend(color, mapcountry);
+        // render bar 
+        //renderBars(color, mapcountry);
+    });
+        //#### Data Count
 
     // Create a data count widget and use the given css selector as anchor. You can also specify
     // an optional chart group for this chart to be scoped within. When a chart belongs
